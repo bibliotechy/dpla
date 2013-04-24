@@ -1,0 +1,35 @@
+
+<p>{{states.count}} </p>
+
+<ul>
+  <li ng-repeat="state in states.facets['sourceResource.spatial.state'].terms | orderBy:state.term">
+  <a ng-href="#/state/{{state.term}}">{{state.term}} : {{state.count}}</a>
+  </li>
+</ul>
+</div>
+<script>
+  function getColor(d) {
+    return d > 10000 ? '#800026' :
+           d > 5000  ? '#BD0026' :
+           d > 2000  ? '#E31A1C' :
+           d > 1000  ? '#FC4E2A' :
+           d > 500   ? '#FD8D3C' :
+           d > 200   ? '#FEB24C' :
+           d > 100   ? '#FED976' :
+                      '#FFEDA0';
+}
+
+function style(feature) {
+    return {
+      fillColor: getColor({{obj}}[feature.properties.name]),
+        weight: 2,
+        opacity: 1,
+        color: 'white',
+        dashArray: '3',
+        fillOpacity: 0.7
+    };
+} 
+
+    L.geoJson(statesData, {style : style}).addTo(map);
+
+    <script>
