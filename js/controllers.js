@@ -17,6 +17,20 @@ function allStates($http, $scope) {
 function state($http, $scope, $routeParams){
   $http.jsonp('http://api.dp.la/v2/items?sourceResource.spatial.state=' + $routeParams.state + " &page_size=0&facets=sourceResource.spatial.county,sourceResource.spatial.city&callback=JSON_CALLBACK&api_key=9da474273d98c8dc3dc567939e89f9f8").success(function(data) {
     $scope.state = data;
+    $scope.params = $routeParams;
+  })
+}
+
+function county($http, $scope, $routeParams){
+  $http.jsonp('http://api.dp.la/v2/items?sourceResource.spatial.state=' + $routeParams.state + ' &sourceResource.spatial.county='+ $routeParams.county +'page_size=10&callback=JSON_CALLBACK&api_key=9da474273d98c8dc3dc567939e89f9f8').success(function(data) {
+    $scope.county = data;
+    $scope.params = $routeParams;
+  })
+}
+
+function city($http, $scope, $routeParams){
+  $http.jsonp('http://api.dp.la/v2/items?sourceResource.spatial.state=' + $routeParams.state + ' &sourceResource.spatial.county='+ $routeParams.city +'page_size=10&callback=JSON_CALLBACK&api_key=9da474273d98c8dc3dc567939e89f9f8').success(function(data) {
+    $scope.state = data;
   })
 }
 
