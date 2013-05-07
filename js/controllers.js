@@ -10,7 +10,7 @@ function allStates($http, $scope) {
     var obj = {};
     data.facets['sourceResource.spatial.state'].terms.forEach(function(el) { obj[el.term] = el.count});
     $scope.shapes.features.forEach(function(feature, index){feature.properties.count = obj[feature.properties.Name]; });
-L.geoJson($scope.shapes, {style : style}).addTo(map);
+L.geoJson($scope.shapes, {style : style, onEachFeature : onEachFeature }).addTo(map);
 
 var legend = L.control({position: 'bottomright'});
 
@@ -77,6 +77,15 @@ function style(feature) {
 }
 
 function onEachFeature(feature, layer) {
+  layer.bindPopup(feature.properties.Name);
+  layer.on({
+    click     : zoomLoad
+  });
+}
+
+function zoomLoad(e) {
+  map.fitBounds(e.target.getBounds());
+  window.location.assign('/dpla/#/state/'+ escape(e.target.feature.properties.Name));
 }
 
 function state($http, $scope, $routeParams){
