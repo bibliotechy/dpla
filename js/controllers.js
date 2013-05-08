@@ -55,17 +55,16 @@ function resetHighlight(e) {
 
 function getColor(d) {
   return d > 50000 ? '#800026' :
-  d > 25000  ? '#BD0026' :
-  d > 10000  ? '#E31A1C' :
-  d > 5000  ? '#FC4E2A' :
-  d > 3000   ? '#FD8D3C' :
-  d > 1000   ? '#FEB24C' :
-  d > 500   ? '#FED976' :
+  d > 1000  ? '#BD0026' :
+  d > 500  ? '#E31A1C' :
+  d > 300  ? '#FC4E2A' :
+  d > 100   ? '#FD8D3C' :
+  d > 50   ? '#FEB24C' :
+  d > 10   ? '#FED976' :
   '#BADA55';
 }
 
 function style(feature) {
-  //console.log(feature);
   return {
     fillColor: getColor(feature.properties.count),
     weight: 2,
@@ -90,7 +89,16 @@ function zoomLoad(e) {
 
 function state($http, $scope, $routeParams){
   $http.jsonp('http://api.dp.la/v2/items?sourceResource.spatial.state=' + $routeParams.state + " &page_size=0&facets=sourceResource.spatial.county,sourceResource.spatial.city&callback=JSON_CALLBACK&api_key=9da474273d98c8dc3dc567939e89f9f8").success(function(data) {
-    $scope.state = data;
+    var ab = abbrev[$routeParams.state.toUpperCase()]
+    $http.get('data/' + ab + '.js').success(function(county_data) {
+   $scope.shapes = county_data; 
+   $scope.state = data;
+   var obj = {};
+   data.facets['sourceResource.spatial.county'].terms.forEach(function(el) {obj[el.term.split(' ').slice(0,-1).join(' ')] = el.count});
+   $scope.shapes.features.forEach(function(feature, index){feature.properties.count = obj[feature.properties.name]; });
+   L.geoJson($scope.shapes, {style : style, onEachFeature : onEachFeature }).addTo(map);
+
+   })
     $scope.params = $routeParams;
   })
 }
@@ -121,3 +129,5 @@ angular.module('myApp.controllers', []).
 
   }]);
   */
+
+var abbrev  ={"ALABAMA":"AL","ALASKA":"AK","AMERICAN SAMOA":"AS","ARIZONA":"AZ","ARKANSAS":"AR","CALIFORNIA":"CA","COLORADO":"CO","CONNECTICUT":"CT","DELAWARE":"DE","DISTRICT OF COLUMBIA":"DC","FEDERATED STATES OF MICRONESIA":"FM","FLORIDA":"FL","GEORGIA":"GA","GUAM":"GU","HAWAII":"HI","IDAHO":"ID","ILLINOIS":"IL","INDIANA":"IN","IOWA":"IA","KANSAS":"KS","KENTUCKY":"KY","LOUISIANA":"LA","MAINE":"ME","MARSHALL ISLANDS":"MH","MARYLAND":"MD","MASSACHUSETTS":"MA","MICHIGAN":"MI","MINNESOTA":"MN","MISSISSIPPI":"MS","MISSOURI":"MO","MONTANA":"MT","NEBRASKA":"NE","NEVADA":"NV","NEW HAMPSHIRE":"NH","NEW JERSEY":"NJ","NEW MEXICO":"NM","NEW YORK":"NY","NORTH CAROLINA":"NC","NORTH DAKOTA":"ND","NORTHERN MARIANA ISLANDS":"MP","OHIO":"OH","OKLAHOMA":"OK","OREGON":"OR","PALAU":"PW","PENNSYLVANIA":"PA","PUERTO RICO":"PR","RHODE ISLAND":"RI","SOUTH CAROLINA":"SC","SOUTH DAKOTA":"SD","TENNESSEE":"TN","TEXAS":"TX","UTAH":"UT","VERMONT":"VT","VIRGIN ISLANDS":"VI","VIRGINIA":"VA","WASHINGTON":"WA","WEST VIRGINIA":"WV","WISCONSIN":"WI","WYOMING":"WY"};
