@@ -24,7 +24,7 @@ legend.onAdd = function (map) {
     for (var i = grades.length; i > 0; i--) {
         div.innerHTML +=
             '<i style="background:' + getColor(grades[i -1] ) + '"></i> ' +
-            (grades[i]?  grades[i - 1] + '&ndash;' + grades[i] + '<br>' : grades[i - 1] + '+<br>');
+            (grades[i]?  grades[i - 1]/1000 + 'k &ndash;' + grades[i]/1000 + 'k<br>' : grades[i - 1] + '+<br>');
     }
 
     return div;
