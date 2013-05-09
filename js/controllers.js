@@ -11,7 +11,6 @@ function allStates($http, $scope) {
     data.facets['sourceResource.spatial.state'].terms.forEach(function(el) { obj[el.term] = el.count});
     $scope.shapes.features.forEach(function(feature, index){feature.properties.count = obj[feature.properties.Name]; });
 L.geoJson($scope.shapes, {style : StateStyle, onEachFeature : onEachStateFeature }).addTo(map);
-
 var legend = L.control({position: 'bottomright'});
 
 legend.onAdd = function (map) {
@@ -38,16 +37,8 @@ legend.addTo(map);
 
 function highlightFeature(e) {
     var layer = e.target;
-    layer.setStyle({
-        weight: 5,
-        color: '#666',
-        dashArray: '',
-        fillOpacity: 0.7
-    });
-    if (!L.Browser.ie && !L.Browser.opera) {
-        layer.bringToFront();
+      info.update(layer.feature.properties);
     }
-}
 
 function resetHighlight(e) {
     $scope.geojson.resetStyle(e.target);
@@ -67,11 +58,17 @@ function CountyStyle(feature) {
 }
 
 function onEachCountyFeature(feature, layer) {
-  layer.bindPopup(feature.properties.name + " : " + feature.properties.count);
   layer.on({
-    click     : CountyZoomLoad
+    click     : CountyZoomLoad,
+    mouseover : highlightFeature 
   });
 }
+
+function openPopup(e) {
+  var j = e;
+  e.layer.openPopup();
+}
+
 function getCountyColor(d) {
   return d > 1000 ? '#321414' :
   d > 500  ? '#701C1C' :
@@ -104,9 +101,9 @@ function getStateColor(d) {
   '#FFFAFA';
 }
 function onEachStateFeature(feature, layer) {
-  layer.bindPopup(feature.properties.Name);
   layer.on({
-    click     : StateZoomLoad
+    click     : StateZoomLoad,
+    mouseover : highlightFeature 
   });
 }
 function StateZoomLoad(e) {
@@ -127,6 +124,13 @@ function state($http, $scope, $routeParams){
    var obj = {};
    data.facets['sourceResource.spatial.county'].terms.forEach(function(el) {obj[el.term.split(' ').slice(0,-1).join(' ')] = el.count});
    $scope.shapes.features.forEach(function(feature, index){feature.properties.count = obj[feature.properties.name]; });
+info.update = function (props) {
+    this._div.innerHTML = '<h4>DPLA Records By County in '+ $routeParams.state  +' </h4>' +  (props ?
+        '<b>' + props.name + '</b><br />' + props.count + ' records'
+        : 'Hover over a state');
+};
+
+
    L.geoJson($scope.shapes, {style : CountyStyle, onEachFeature : onEachCountyFeature }).addTo(map);
 
    })
@@ -135,19 +139,22 @@ function state($http, $scope, $routeParams){
 }
 
 function county($http, $scope, $routeParams){
-  $http.jsonp('http://api.dp.la/v2/items?sourceResource.spatial.state=' + $routeParams.state + ' &sourceResource.spatial.county='+ $routeParams.county +'&page_size=10&callback=JSON_CALLBACK&api_key=9da474273d98c8dc3dc567939e89f9f8').success(function(data) {
+  $http.jsonp('http://api.dp.la/v2/items?sourceResource.spatial.state=' + $routeParams.state + ' &sourceResource.spatial.county='+ $routeParams.county +'&page_size=100&callback=JSON_CALLBACK&api_key=9da474273d98c8dc3dc567939e89f9f8').success(function(data) {
     $scope.county = data;
     $scope.params = $routeParams;
     data.docs.forEach(function(doc){
-    try {
-      var cs = doc.sourceResource.spatial[0].coordinates.split(',');
-      if(cs) {
-      L.marker([cs[0],cs[1]]).addTo(map).bindPopup(doc.sourceResource.title)
-      }
-    }
-    catch (e) {}
+      doc.sourceResource.spatial.forEach(function(el){
+        try {
+          var cs = el.coordinates.split(',');
+          if(cs) {
+            L.marker([cs[0],cs[1]]).addTo(map).bindPopup(doc.sourceResource.title)
+          }
+        }
+        catch (e) {}
+
+      });
     });
-  })
+  });
 }
 
 function city($http, $scope, $routeParams){
