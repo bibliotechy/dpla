@@ -10,7 +10,7 @@ function allStates($http, $scope) {
     var obj = {};
     data.facets['sourceResource.spatial.state'].terms.forEach(function(el) { obj[el.term] = el.count});
     $scope.shapes.features.forEach(function(feature, index){feature.properties.count = obj[feature.properties.Name]; });
-L.geoJson($scope.shapes, {style : style, onEachFeature : onEachFeature }).addTo(map);
+L.geoJson($scope.shapes, {style : StateStyle, onEachFeature : onEachStateFeature }).addTo(map);
 
 var legend = L.control({position: 'bottomright'});
 
@@ -23,7 +23,7 @@ legend.onAdd = function (map) {
     // loop through our density intervals and generate a label with a colored square for each interval
     for (var i = grades.length; i > 0; i--) {
         div.innerHTML +=
-            '<i style="background:' + getColor(grades[i -1] ) + '"></i> ' +
+            '<i style="background:' + getStateColor(grades[i -1] ) + '"></i> ' +
             (grades[i]?  grades[i - 1]/1000 + 'k &ndash;' + grades[i]/1000 + 'k<br>' : grades[i - 1] + '+<br>');
     }
 
@@ -53,20 +53,11 @@ function resetHighlight(e) {
     $scope.geojson.resetStyle(e.target);
 }
 
-function getColor(d) {
-  return d > 50000 ? '#800026' :
-  d > 1000  ? '#BD0026' :
-  d > 500  ? '#E31A1C' :
-  d > 300  ? '#FC4E2A' :
-  d > 100   ? '#FD8D3C' :
-  d > 50   ? '#FEB24C' :
-  d > 10   ? '#FED976' :
-  '#BADA55';
-}
 
-function style(feature) {
+
+function CountyStyle(feature) {
   return {
-    fillColor: getColor(feature.properties.count),
+    fillColor: getCountyColor(feature.properties.count),
     weight: 2,
     opacity: 1,
     color: 'white',
@@ -75,16 +66,56 @@ function style(feature) {
   };
 }
 
-function onEachFeature(feature, layer) {
-  layer.bindPopup(feature.properties.Name);
+function onEachCountyFeature(feature, layer) {
+  layer.bindPopup(feature.properties.name + " : " + feature.properties.count);
   layer.on({
-    click     : zoomLoad
+    click     : CountyZoomLoad
   });
 }
+function getCountyColor(d) {
+  return d > 1000 ? '#321414' :
+  d > 500  ? '#701C1C' :
+  d > 200  ? '#b31b1b' :
+  d > 100  ? '#CE1620' :
+  d > 50   ? '#CD5C5C' :
+  d > 25   ? '#FF1C00' :
+  d > 10  ? '#FF6961' :
+  '#FFFAFA';
+}
 
-function zoomLoad(e) {
+function StateStyle(feature) {
+  return {
+    fillColor: getStateColor(feature.properties.count),
+    weight: 2,
+    opacity: 1,
+    color: 'white',
+    dashArray: '3',
+    fillOpacity: 0.7
+  };
+}
+function getStateColor(d) {
+  return d > 50000 ? '#321414' :
+  d > 25000  ? '#701C1C' :
+  d > 10000  ? '#B31B1B' :
+  d > 5000  ? '#CE1620' :
+  d > 1000   ? '#CD5C5C' :
+  d > 500   ? '#FF1C00' :
+  d > 100  ? '#FF6961' :
+  '#FFFAFA';
+}
+function onEachStateFeature(feature, layer) {
+  layer.bindPopup(feature.properties.Name);
+  layer.on({
+    click     : StateZoomLoad
+  });
+}
+function StateZoomLoad(e) {
   map.fitBounds(e.target.getBounds());
   window.location.assign('/dpla/#/state/'+ escape(e.target.feature.properties.Name));
+}
+function CountyZoomLoad(e) {
+  map.fitBounds(e.target.getBounds());
+  window.location.assign('/dpla/#/state/' +  escape(window.location.hash.split('/').slice(-1)[0]) +'/county/'+ escape(e.target.feature.properties.name));
 }
 
 function state($http, $scope, $routeParams){
@@ -96,7 +127,7 @@ function state($http, $scope, $routeParams){
    var obj = {};
    data.facets['sourceResource.spatial.county'].terms.forEach(function(el) {obj[el.term.split(' ').slice(0,-1).join(' ')] = el.count});
    $scope.shapes.features.forEach(function(feature, index){feature.properties.count = obj[feature.properties.name]; });
-   L.geoJson($scope.shapes, {style : style, onEachFeature : onEachFeature }).addTo(map);
+   L.geoJson($scope.shapes, {style : CountyStyle, onEachFeature : onEachCountyFeature }).addTo(map);
 
    })
     $scope.params = $routeParams;
@@ -107,6 +138,15 @@ function county($http, $scope, $routeParams){
   $http.jsonp('http://api.dp.la/v2/items?sourceResource.spatial.state=' + $routeParams.state + ' &sourceResource.spatial.county='+ $routeParams.county +'&page_size=10&callback=JSON_CALLBACK&api_key=9da474273d98c8dc3dc567939e89f9f8').success(function(data) {
     $scope.county = data;
     $scope.params = $routeParams;
+    data.docs.forEach(function(doc){
+    try {
+      var cs = doc.sourceResource.spatial[0].coordinates.split(',');
+      if(cs) {
+      L.marker([cs[0],cs[1]]).addTo(map).bindPopup(doc.sourceResource.title)
+      }
+    }
+    catch (e) {}
+    });
   })
 }
 
@@ -116,18 +156,5 @@ function city($http, $scope, $routeParams){
     $scope.params = $routeParams;
   })
 }
-
-/*
-angular.module('myApp.controllers', []).
-  controller('allStates', [function($scope, $http) {
-    $http.jsonp('http://api.dp.la/v2/items?sourceResource.spatial.country=United+States&page_size=0&facets=sourceResource.spatial.state&callback=myFunc&api_key=9da474273d98c8dc3dc567939e89f9f8', function(date) {
-      $scope.states = data;
-    })
-    $scope.orderProp = 'term';
-  }])
-  .controller('MyCtrl2', [function() {
-
-  }]);
-  */
 
 var abbrev  ={"ALABAMA":"AL","ALASKA":"AK","AMERICAN SAMOA":"AS","ARIZONA":"AZ","ARKANSAS":"AR","CALIFORNIA":"CA","COLORADO":"CO","CONNECTICUT":"CT","DELAWARE":"DE","DISTRICT OF COLUMBIA":"DC","FEDERATED STATES OF MICRONESIA":"FM","FLORIDA":"FL","GEORGIA":"GA","GUAM":"GU","HAWAII":"HI","IDAHO":"ID","ILLINOIS":"IL","INDIANA":"IN","IOWA":"IA","KANSAS":"KS","KENTUCKY":"KY","LOUISIANA":"LA","MAINE":"ME","MARSHALL ISLANDS":"MH","MARYLAND":"MD","MASSACHUSETTS":"MA","MICHIGAN":"MI","MINNESOTA":"MN","MISSISSIPPI":"MS","MISSOURI":"MO","MONTANA":"MT","NEBRASKA":"NE","NEVADA":"NV","NEW HAMPSHIRE":"NH","NEW JERSEY":"NJ","NEW MEXICO":"NM","NEW YORK":"NY","NORTH CAROLINA":"NC","NORTH DAKOTA":"ND","NORTHERN MARIANA ISLANDS":"MP","OHIO":"OH","OKLAHOMA":"OK","OREGON":"OR","PALAU":"PW","PENNSYLVANIA":"PA","PUERTO RICO":"PR","RHODE ISLAND":"RI","SOUTH CAROLINA":"SC","SOUTH DAKOTA":"SD","TENNESSEE":"TN","TEXAS":"TX","UTAH":"UT","VERMONT":"VT","VIRGIN ISLANDS":"VI","VIRGINIA":"VA","WASHINGTON":"WA","WEST VIRGINIA":"WV","WISCONSIN":"WI","WYOMING":"WY"};
