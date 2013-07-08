@@ -99,15 +99,15 @@
     legend.addTo(map);
     
     legend.update = function(props) {
-      console.log(props.kind);
       var grades = [0, 100, 500, 1000, 5000, 10000, 25000, 50000],
       labels = [];
-      if (props.kind == 'county') {grades.map(function(x) {return x/100} )}
+      this._container.innerHTML = "";
+      if (abbrev[props.Name.toUpperCase()]) {grades= grades.map(function(x) {return x/100} )}
 
       // loop through our density intervals and generate a label with a colored square for each interval
       for (var i = grades.length; i > 0; i--) {
-       ldiv.innerHTML +=
-        '<i style="background:' + getColor(grades[i -1] ) + '"></i> ' +
+       this._container.innerHTML +=
+        '<i style="background:' + getColor(grades[i -1]*100 ) + '"></i> ' +
         (grades[i]?  grades[i - 1] + ' &ndash;' + grades[i] + '<br>' : grades[i - 1] + '+<br>');
       }
     }
